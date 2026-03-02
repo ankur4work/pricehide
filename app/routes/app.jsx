@@ -1,6 +1,7 @@
 import { Link, Outlet, useLoaderData, useRouteError } from "@remix-run/react";
 import { boundary } from "@shopify/shopify-app-remix/server";
 import { AppProvider } from "@shopify/shopify-app-remix/react";
+import { AppProvider as PolarisProvider } from "@shopify/polaris";
 import { NavMenu } from "@shopify/app-bridge-react";
 import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
 import { authenticate } from "../shopify.server";
@@ -29,7 +30,11 @@ export default function App() {
 
 // Shopify needs error boundary for embedded app
 export function ErrorBoundary() {
-  return boundary.error(useRouteError());
+  return (
+    <PolarisProvider i18n={{}}>
+      {boundary.error(useRouteError())}
+    </PolarisProvider>
+  );
 }
 
 export const headers = (headersArgs) => {

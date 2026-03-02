@@ -2,7 +2,7 @@
 
 client_id = "331a9fccc80a810b80f9b38cefcdcaa7"
 name = "Xeo Hide Price"
-application_url = "https://your-app.vercel.app"
+application_url = "https://pricehide-fles.vercel.app"
 embedded = true
 
 [build]
@@ -16,4 +16,4 @@ api_version = "2026-04"
 scopes = "read_products,read_inventory,read_themes"
 
 [auth]
-redirect_urls = [ "https://your-app.vercel.app/auth/callback" ]
+redirect_urls = [ "https://pricehide-fles.vercel.app/auth/callback" ]
