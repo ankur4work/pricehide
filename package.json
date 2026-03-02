@@ -4,7 +4,7 @@
   "private": true,
   "description": "Shopify app to hide product prices when out of stock",
   "scripts": {
-    "build": "npx prisma generate && remix vite:build",
+    "build": "npx prisma generate && npx remix vite:build",
     "dev": "shopify app dev",
     "deploy": "shopify app deploy",
     "config:link": "shopify app config link",
