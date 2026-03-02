@@ -1,0 +1,25 @@
+{
+  "app": {
+    "name": "Hide Price App",
+    "description": "Hide prices for out-of-stock products"
+  },
+  "blocks": {
+    "app_embed": {
+      "name": "Hide Price App",
+      "settings": {
+        "enabled": {
+          "label": "Enable price hiding"
+        },
+        "hide_only_out_of_stock": {
+          "label": "Hide only when out of stock"
+        },
+        "hide_add_to_cart": {
+          "label": "Hide Add to Cart button"
+        },
+        "custom_message": {
+          "label": "Custom message"
+        }
+      }
+    }
+  }
+}

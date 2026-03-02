@@ -1,0 +1,20 @@
+api_version = "2024-01"
+
+[[extensions]]
+uid = "e2e37564-4614-0154-4701-bb40b1e15e8e4e9258cd"
+type = "theme"
+name = "Xeo Hide Price"
+handle = "hide-price-extension"
+
+[[extensions.assets]]
+output = "assets/hide-price.js"
+file = "assets/hide-price.js"
+
+[[extensions.assets]]
+output = "assets/hide-price.css"
+file = "assets/hide-price.css"
+
+[[extensions.blocks]]
+type = "app_embed"
+name = "Xeo Hide Price"
+file = "blocks/app-embed.liquid"

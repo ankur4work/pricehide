@@ -1,0 +1,9 @@
+.hide-price-hidden {
+  display: none !important;
+}
+
+.hide-price-app-message {
+  font-weight: 500;
+  color: inherit;
+  opacity: 0.85;
+}

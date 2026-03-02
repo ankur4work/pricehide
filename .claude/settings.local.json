@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(shopify app dev:*)",
+      "Bash(git init:*)",
+      "Bash(git branch:*)",
+      "Bash(git add:*)",
+      "Bash(xargs grep:*)",
+      "Bash(xargs cat:*)",
+      "Bash(grep:*)",
+      "Bash(npx prisma:*)",
+      "Bash(npx remix:*)",
+      "Bash(node:*)",
+      "Bash(fnm:*)",
+      "Bash(winget install:*)",
+      "Bash(nvm list:*)",
+      "Bash(export:*)"
+    ]
+  }
+}

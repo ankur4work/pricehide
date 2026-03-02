@@ -1,0 +1,5 @@
+type = "frontend"
+
+[commands]
+dev = "npx remix vite:dev"
+build = "npx remix vite:build"

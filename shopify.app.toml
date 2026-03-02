@@ -1,0 +1,19 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "331a9fccc80a810b80f9b38cefcdcaa7"
+name = "Xeo Hide Price"
+application_url = "https://your-app.vercel.app"
+embedded = true
+
+[build]
+automatically_update_urls_on_dev = true
+
+[webhooks]
+api_version = "2026-04"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_products,read_inventory,read_themes"
+
+[auth]
+redirect_urls = [ "https://your-app.vercel.app/auth/callback" ]

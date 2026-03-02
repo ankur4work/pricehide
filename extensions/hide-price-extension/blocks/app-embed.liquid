@@ -1,0 +1,104 @@
+{% comment %}
+  Hide Price App Embed Block
+  
+  This block injects the hide-price.js script into the storefront
+  and passes the necessary configuration data from Liquid.
+  
+  The script will:
+  - Detect out-of-stock products
+  - Hide prices dynamically
+  - Show custom replacement messages
+  - Work across product pages, collections, and featured sections
+{% endcomment %}
+
+{% if shop %}
+<script id="hide-price-app-config" type="application/json">
+{
+  "shopDomain": "{{ shop.permanent_domain }}",
+  "enabled": {% if block.settings.enabled == nil %}true{% else %}{{ block.settings.enabled }}{% endif %},
+  "hideAddToCart": {% if block.settings.hide_add_to_cart == nil %}true{% else %}{{ block.settings.hide_add_to_cart }}{% endif %},
+  "hideOnlyOutOfStock": {% if block.settings.hide_only_out_of_stock == nil %}true{% else %}{{ block.settings.hide_only_out_of_stock }}{% endif %},
+  "customMessage": {{ block.settings.custom_message | default: "Price on Request" | json }},
+  "hideOnProductPage": {% if block.settings.hide_on_product_page == nil %}true{% else %}{{ block.settings.hide_on_product_page }}{% endif %},
+  "hideOnCollection": {% if block.settings.hide_on_collection == nil %}true{% else %}{{ block.settings.hide_on_collection }}{% endif %},
+  "hideOnFeatured": {% if block.settings.hide_on_featured == nil %}true{% else %}{{ block.settings.hide_on_featured }}{% endif %},
+  "hideOnQuickView": {% if block.settings.hide_on_quick_view == nil %}true{% else %}{{ block.settings.hide_on_quick_view }}{% endif %},
+  "_pageType": "{{ request.page_type }}",
+  "productAvailability": {
+    {% assign avail_first = true %}{% if product %}{% unless avail_first %},{% endunless %}"{{ product.handle }}": {{ product.available }}{% assign avail_first = false %}{% endif %}{% if collection %}{% for p in collection.products %}{% unless avail_first %},{% endunless %}"{{ p.handle }}": {{ p.available }}{% assign avail_first = false %}{% endfor %}{% endif %}{% if search and search.performed %}{% for item in search.results %}{% if item.object_type == 'product' %}{% unless avail_first %},{% endunless %}"{{ item.handle }}": {{ item.available }}{% assign avail_first = false %}{% endif %}{% endfor %}{% endif %}
+  }
+}
+</script>
+
+{% endif %}
+
+{% schema %}
+{
+  "name": "Xeo Hide Price",
+  "target": "head",
+  "stylesheet": "hide-price.css",
+  "javascript": "hide-price.js",
+  "settings": [
+    {
+      "type": "header",
+      "content": "General Settings"
+    },
+    {
+      "type": "checkbox",
+      "id": "enabled",
+      "label": "Enable price hiding",
+      "default": true,
+      "info": "Turn the app functionality on or off"
+    },
+    {
+      "type": "checkbox",
+      "id": "hide_only_out_of_stock",
+      "label": "Hide only when out of stock",
+      "default": true,
+      "info": "When unchecked, hides prices for all products"
+    },
+    {
+      "type": "checkbox",
+      "id": "hide_add_to_cart",
+      "label": "Hide Add to Cart button",
+      "default": true,
+      "info": "Also hide the Add to Cart button for affected products"
+    },
+    {
+      "type": "text",
+      "id": "custom_message",
+      "label": "Custom message",
+      "default": "Price on Request",
+      "info": "Message to display instead of the price"
+    },
+    {
+      "type": "header",
+      "content": "Location Settings"
+    },
+    {
+      "type": "checkbox",
+      "id": "hide_on_product_page",
+      "label": "Product pages",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "hide_on_collection",
+      "label": "Collection pages",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "hide_on_featured",
+      "label": "Featured product sections",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "hide_on_quick_view",
+      "label": "Quick view modals",
+      "default": true
+    }
+  ]
+}
+{% endschema %}
