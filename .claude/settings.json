@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/ankur/AppData/Local/Temp/claude/c--Users-ankur-work-pricehide/956fbae8-7404-4b8d-98df-a9d1aa6ca7c0/tasks/**)"
+    ]
+  }
+}
