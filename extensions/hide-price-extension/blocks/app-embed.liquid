@@ -1,21 +1,30 @@
 {% comment %}
   Hide Price App Embed Block
-  
+
   This block injects the hide-price.js script into the storefront
   and passes the necessary configuration data from Liquid.
-  
-  The script will:
-  - Detect out-of-stock products
-  - Hide prices dynamically
-  - Show custom replacement messages
-  - Work across product pages, collections, and featured sections
+
+  Settings are read from the shop metafield (synced when the merchant
+  saves in the app admin).  Block-level settings in the theme editor
+  are used only as a fallback for stores that haven't saved yet.
 {% endcomment %}
 
 {% if shop %}
+{% assign app_config = shop.metafields.xeo_hide_price.config.value %}
 <script id="hide-price-app-config" type="application/json">
 {
   "shopDomain": "{{ shop.permanent_domain }}",
-  "enabled": {% if block.settings.enabled == nil %}true{% else %}{{ block.settings.enabled }}{% endif %},
+  {% if app_config %}
+  "enabled": {{ app_config.enabled | default: false }},
+  "hideAddToCart": {{ app_config.hideAddToCart | default: true }},
+  "hideOnlyOutOfStock": {{ app_config.hideOnlyOutOfStock | default: true }},
+  "customMessage": {{ app_config.customMessage | default: "Price on Request" | json }},
+  "hideOnProductPage": {{ app_config.hideOnProductPage | default: true }},
+  "hideOnCollection": {{ app_config.hideOnCollection | default: true }},
+  "hideOnFeatured": {{ app_config.hideOnFeatured | default: true }},
+  "hideOnQuickView": {{ app_config.hideOnQuickView | default: true }},
+  {% else %}
+  "enabled": {% if block.settings.enabled == nil %}false{% else %}{{ block.settings.enabled }}{% endif %},
   "hideAddToCart": {% if block.settings.hide_add_to_cart == nil %}true{% else %}{{ block.settings.hide_add_to_cart }}{% endif %},
   "hideOnlyOutOfStock": {% if block.settings.hide_only_out_of_stock == nil %}true{% else %}{{ block.settings.hide_only_out_of_stock }}{% endif %},
   "customMessage": {{ block.settings.custom_message | default: "Price on Request" | json }},
@@ -23,6 +32,7 @@
   "hideOnCollection": {% if block.settings.hide_on_collection == nil %}true{% else %}{{ block.settings.hide_on_collection }}{% endif %},
   "hideOnFeatured": {% if block.settings.hide_on_featured == nil %}true{% else %}{{ block.settings.hide_on_featured }}{% endif %},
   "hideOnQuickView": {% if block.settings.hide_on_quick_view == nil %}true{% else %}{{ block.settings.hide_on_quick_view }}{% endif %},
+  {% endif %}
   "_pageType": "{{ request.page_type }}",
   "productAvailability": {
     {% assign avail_first = true %}{% if product %}{% unless avail_first %},{% endunless %}"{{ product.handle }}": {{ product.available }}{% assign avail_first = false %}{% endif %}{% if collection %}{% for p in collection.products %}{% unless avail_first %},{% endunless %}"{{ p.handle }}": {{ p.available }}{% assign avail_first = false %}{% endfor %}{% endif %}{% if search and search.performed %}{% for item in search.results %}{% if item.object_type == 'product' %}{% unless avail_first %},{% endunless %}"{{ item.handle }}": {{ item.available }}{% assign avail_first = false %}{% endif %}{% endfor %}{% endif %}
@@ -44,10 +54,14 @@
       "content": "General Settings"
     },
     {
+      "type": "paragraph",
+      "content": "Settings are managed from the Xeo Hide Price app admin. The options below are fallback defaults used only before you save settings in the app."
+    },
+    {
       "type": "checkbox",
       "id": "enabled",
       "label": "Enable price hiding",
-      "default": true,
+      "default": false,
       "info": "Turn the app functionality on or off"
     },
     {

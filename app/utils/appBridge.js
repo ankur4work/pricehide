@@ -19,42 +19,63 @@ export function getExtensionsHubUrl(shop) {
 }
 
 /**
- * Check if app embed is enabled via GraphQL
+ * Check if the app embed block is enabled in the live theme.
+ * Reads settings_data.json via REST Asset API and looks for our extension handle.
  */
-export async function checkAppEmbedStatus(admin, extensionUuid) {
+export async function checkAppEmbedStatus(session, admin, extensionHandle) {
   try {
-    const response = await admin.graphql(
-      `#graphql
-        query getAppInstallation {
-          currentAppInstallation {
-            id
-            app {
-              handle
-            }
-          }
-          appByHandle(handle: "hide-price-app") {
-            extensionPoints {
-              target
-            }
-          }
-        }
-      `
-    );
+    if (!session?.accessToken) {
+      console.log("[EmbedCheck] No access token yet, skipping");
+      return { isEnabled: false };
+    }
 
-    const data = await response.json();
-    
-    // For now, we'll assume it's enabled if the app is installed
-    // Full embed status check requires checking theme settings
-    return {
-      isEnabled: true,
-      appInstallation: data?.data?.currentAppInstallation,
-    };
+    const theme = await getCurrentTheme(admin);
+    if (!theme) {
+      console.log("[EmbedCheck] Could not get current theme");
+      return { isEnabled: false };
+    }
+
+    const themeId = theme.id.replace("gid://shopify/OnlineStoreTheme/", "");
+    console.log("[EmbedCheck] Checking theme", themeId, theme.name);
+
+    const url = `https://${session.shop}/admin/api/2024-01/themes/${themeId}/assets.json?asset[key]=config/settings_data.json`;
+    const res = await fetch(url, {
+      headers: { "X-Shopify-Access-Token": session.accessToken },
+    });
+
+    if (!res.ok) {
+      console.error("[EmbedCheck] REST fetch failed:", res.status);
+      return { isEnabled: false };
+    }
+
+    const { asset } = await res.json();
+    const settingsData = JSON.parse(asset.value);
+    const blocks = settingsData?.current?.blocks;
+
+    if (!blocks) {
+      console.log("[EmbedCheck] No blocks found in settings_data.json");
+      return { isEnabled: false };
+    }
+
+    console.log("[EmbedCheck] Found blocks:", Object.keys(blocks).length);
+
+    for (const [key, block] of Object.entries(blocks)) {
+      console.log("[EmbedCheck] Block:", key, "type:", block.type, "disabled:", block.disabled);
+      if (
+        block.type &&
+        block.type.includes(extensionHandle) &&
+        block.disabled !== true
+      ) {
+        console.log("[EmbedCheck] ✓ Found enabled embed block");
+        return { isEnabled: true };
+      }
+    }
+
+    console.log("[EmbedCheck] Extension handle '" + extensionHandle + "' not found in any block");
+    return { isEnabled: false };
   } catch (error) {
-    console.error("Error checking app embed status:", error);
-    return {
-      isEnabled: false,
-      error: error.message,
-    };
+    console.error("[EmbedCheck] Error:", error.message || error);
+    return { isEnabled: false };
   }
 }
 

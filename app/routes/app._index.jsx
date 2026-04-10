@@ -16,14 +16,14 @@ import {
 } from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
-import { getSettings, updateSettings } from "../models/settings.server";
+import { getSettings, updateSettings, syncSettingsToStorefront } from "../models/settings.server";
 import { validateSettings, sanitizeSettings, parseFormData } from "../utils/validation";
-import { getCurrentTheme } from "../utils/appBridge";
+import { getCurrentTheme, checkAppEmbedStatus } from "../utils/appBridge";
 import { SettingsBlock } from "../components/SettingsBlock";
 import { SetupStepsBlock } from "../components/SetupStepsBlock";
 
-// Extension UUID - replace with your actual extension UUID after creating the extension
-const EXTENSION_UUID = "hide-price-extension";
+// App handle used in theme block type strings (shopify://apps/{handle}/blocks/...)
+const APP_HANDLE = "xeo-hide-price";
 
 /**
  * Loader - fetches settings and shop data
@@ -39,16 +39,16 @@ export const loader = async ({ request }) => {
     // Get current theme info
     const currentTheme = await getCurrentTheme(admin);
 
-    // For demo purposes, we assume embed is enabled
-    // In production, you would check the actual theme settings
-    const isEmbedEnabled = true;
+    // Check if the app embed is enabled in the live theme
+    const embedResult = await checkAppEmbedStatus(session, admin, APP_HANDLE);
+    const isEmbedEnabled = embedResult.isEnabled;
 
     return json({
       shop,
       settings,
       currentTheme,
       isEmbedEnabled,
-      extensionUuid: EXTENSION_UUID,
+      extensionUuid: APP_HANDLE,
     });
   } catch (error) {
     console.error("Loader error:", error);
@@ -57,7 +57,7 @@ export const loader = async ({ request }) => {
       settings: null,
       currentTheme: null,
       isEmbedEnabled: false,
-      extensionUuid: EXTENSION_UUID,
+      extensionUuid: APP_HANDLE,
       error: "Failed to load: " + error.message,
     });
   }
@@ -92,6 +92,14 @@ export const action = async ({ request }) => {
         const sanitizedData = sanitizeSettings(data);
         const updatedSettings = await updateSettings(shop, sanitizedData);
 
+        // Sync to storefront metafield so Liquid can read the latest settings
+        try {
+          await syncSettingsToStorefront(admin, updatedSettings);
+        } catch (error) {
+          console.error("Failed to sync settings metafield:", error);
+          // Don't fail the save — DB is already updated
+        }
+
         return json({
           success: true,
           settings: updatedSettings,
@@ -100,13 +108,12 @@ export const action = async ({ request }) => {
       }
 
       case "checkEmbed": {
-        // In production, you would check the actual theme settings via API
-        // For now, we return a simulated response
         const currentTheme = await getCurrentTheme(admin);
-        
+        const embedCheck = await checkAppEmbedStatus(session, admin, APP_HANDLE);
+
         return json({
           success: true,
-          embedStatus: true, // Would be actual check in production
+          embedStatus: embedCheck.isEnabled,
           currentTheme,
         });
       }
@@ -175,8 +182,8 @@ export default function Index() {
                   Automatically hide product prices when inventory reaches zero
                 </Text>
               </BlockStack>
-              <Badge tone={settings?.enabled ? "success" : "attention"}>
-                {settings?.enabled ? "Active" : "Disabled"}
+              <Badge tone={isEmbedEnabled ? "success" : "attention"}>
+                {isEmbedEnabled ? "Active" : "Embed not enabled"}
               </Badge>
             </InlineStack>
           </BlockStack>
@@ -192,6 +199,7 @@ export default function Index() {
                 extensionUuid={extensionUuid}
                 isEmbedEnabled={isEmbedEnabled}
                 currentTheme={currentTheme}
+                settings={settings}
               />
 
               {/* Settings */}
@@ -260,12 +268,6 @@ export default function Index() {
                     <Divider />
                     <BlockStack gap="200">
                       <InlineStack align="space-between">
-                        <Text variant="bodyMd">Status</Text>
-                        <Badge tone={settings.enabled ? "success" : "attention"}>
-                          {settings.enabled ? "Enabled" : "Disabled"}
-                        </Badge>
-                      </InlineStack>
-                      <InlineStack align="space-between">
                         <Text variant="bodyMd">Hide Cart Button</Text>
                         <Badge tone={settings.hideAddToCart ? "success" : "attention"}>
                           {settings.hideAddToCart ? "Yes" : "No"}
@@ -305,10 +307,10 @@ export default function Index() {
                   </Text>
                   <Divider />
                   <BlockStack gap="200">
-                    <Link url="https://help.shopify.com" external>
+                    <Link url="https://help.shopify.com" target="_blank">
                       Shopify Help Center
                     </Link>
-                    <Link url="mailto:support@example.com" external>
+                    <Link url="mailto:support@example.com" target="_blank">
                       Contact Support
                     </Link>
                   </BlockStack>

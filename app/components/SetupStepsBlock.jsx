@@ -27,11 +27,12 @@ import { useFetcher } from "@remix-run/react";
  * SetupStepsBlock Component
  * Guides users through app setup and embed verification
  */
-export function SetupStepsBlock({ 
-  shopDomain, 
+export function SetupStepsBlock({
+  shopDomain,
   extensionUuid,
   isEmbedEnabled = false,
   currentTheme = null,
+  settings = null,
 }) {
   const fetcher = useFetcher();
   
@@ -57,11 +58,12 @@ export function SetupStepsBlock({
     fetcher.submit(formData, { method: "POST" });
   }, [fetcher]);
 
-  // Generate theme editor URL for App Bridge redirect
+  // Generate theme editor URL — just opens the App embeds panel;
+  // the merchant toggles our embed from the list.
   const getThemeEditorUrl = useCallback(() => {
     const cleanShop = shopDomain?.replace(".myshopify.com", "") || "";
-    return `https://${cleanShop}.myshopify.com/admin/themes/current/editor?context=apps&activateAppId=${extensionUuid}/app-embed`;
-  }, [shopDomain, extensionUuid]);
+    return `https://${cleanShop}.myshopify.com/admin/themes/current/editor?context=apps`;
+  }, [shopDomain]);
 
   // Toggle step expansion
   const toggleStep = useCallback((step) => {
@@ -72,7 +74,6 @@ export function SetupStepsBlock({
   const steps = [
     { id: "install", label: "App Installed", completed: true },
     { id: "embed", label: "Theme Embed Enabled", completed: localEmbedStatus },
-    { id: "configure", label: "Settings Configured", completed: true }, // Assume configured after install
   ];
 
   const completedSteps = steps.filter((s) => s.completed).length;
@@ -151,23 +152,25 @@ export function SetupStepsBlock({
               <Collapsible open={expandedStep === "embed"}>
                 <Box paddingBlockStart="200" paddingInlineStart="600">
                   <BlockStack gap="300">
-                    {!localEmbedStatus && (
-                      <Banner
-                        title="Action Required"
-                        tone="warning"
-                      >
+                    {localEmbedStatus ? (
+                      <Banner title="App embed is active" tone="success">
                         <p>
-                          The app embed must be enabled in your theme for prices to be hidden on your storefront.
+                          Prices will be hidden on your storefront according to your settings.
                         </p>
                       </Banner>
+                    ) : (
+                      <>
+                        <Banner title="Action Required" tone="warning">
+                          <p>
+                            The app embed must be enabled in your theme for prices to be hidden on your storefront.
+                          </p>
+                        </Banner>
+
+                        <Text variant="bodyMd" tone="subdued">
+                          Enable the app embed in your theme to activate price hiding on your storefront.
+                        </Text>
+                      </>
                     )}
-                    
-                    <Text variant="bodyMd" tone="subdued">
-                      {localEmbedStatus 
-                        ? "The app embed is enabled and prices will be hidden according to your settings."
-                        : "Enable the app embed in your theme to activate price hiding on your storefront."
-                      }
-                    </Text>
 
                     {currentTheme && (
                       <Text variant="bodyMd" tone="subdued">
@@ -177,14 +180,13 @@ export function SetupStepsBlock({
 
                     <InlineStack gap="300">
                       <Button
-                        url={getThemeEditorUrl()}
-                        external
+                        onClick={() => window.open(getThemeEditorUrl(), '_blank')}
                         icon={ExternalIcon}
-                        variant={localEmbedStatus ? "secondary" : "primary"}
+                        variant="secondary"
                       >
-                        {localEmbedStatus ? "Edit Theme Settings" : "Enable App Embed"}
+                        Edit Theme Settings
                       </Button>
-                      
+
                       <Button
                         onClick={handleCheckEmbed}
                         loading={isChecking}
@@ -194,62 +196,27 @@ export function SetupStepsBlock({
                       </Button>
                     </InlineStack>
 
-                    <Divider />
-
-                    <Text variant="headingSm" as="h3">
-                      How to enable:
-                    </Text>
-                    <List type="number">
-                      <List.Item>Click "Enable App Embed" button above</List.Item>
-                      <List.Item>In the theme editor, find "Hide Price App" in the App embeds section</List.Item>
-                      <List.Item>Toggle it ON</List.Item>
-                      <List.Item>Click "Save" in the theme editor</List.Item>
-                      <List.Item>Return here and click "Verify Status"</List.Item>
-                    </List>
+                    {!localEmbedStatus && (
+                      <>
+                        <Divider />
+                        <Text variant="headingSm" as="h3">
+                          How to enable:
+                        </Text>
+                        <List type="number">
+                          <List.Item>Click "Edit Theme Settings" button above</List.Item>
+                          <List.Item>In the theme editor, find "Xeo Hide Price" in the App embeds section</List.Item>
+                          <List.Item>Toggle it ON</List.Item>
+                          <List.Item>Click "Save" in the theme editor</List.Item>
+                          <List.Item>Return here and click "Verify Status"</List.Item>
+                        </List>
+                      </>
+                    )}
                   </BlockStack>
                 </Box>
               </Collapsible>
             </BlockStack>
           </Card>
 
-          {/* Step 3: Configuration */}
-          <Card>
-            <BlockStack gap="200">
-              <InlineStack align="space-between" blockAlign="center">
-                <InlineStack gap="200" blockAlign="center">
-                  <Icon
-                    source={CheckCircleIcon}
-                    tone="success"
-                  />
-                  <Text variant="bodyMd" fontWeight="semibold">
-                    3. Configure Settings
-                  </Text>
-                </InlineStack>
-                <Button
-                  variant="plain"
-                  onClick={() => toggleStep("configure")}
-                  icon={expandedStep === "configure" ? ChevronUpIcon : ChevronDownIcon}
-                  accessibilityLabel="Toggle configuration details"
-                />
-              </InlineStack>
-              
-              <Collapsible open={expandedStep === "configure"}>
-                <Box paddingBlockStart="200" paddingInlineStart="600">
-                  <BlockStack gap="200">
-                    <Text variant="bodyMd" tone="subdued">
-                      Use the settings panel below to customize how prices are hidden:
-                    </Text>
-                    <List>
-                      <List.Item>Choose when to hide prices (out of stock only or always)</List.Item>
-                      <List.Item>Customize the replacement message</List.Item>
-                      <List.Item>Select which pages to apply price hiding</List.Item>
-                      <List.Item>Optionally hide the Add to Cart button</List.Item>
-                    </List>
-                  </BlockStack>
-                </Box>
-              </Collapsible>
-            </BlockStack>
-          </Card>
         </BlockStack>
 
         {/* Quick Status Summary */}

@@ -32,7 +32,7 @@ model Session {
 model AppSettings {
   id                  String   @id @default(cuid())
   shop                String   @unique
-  enabled             Boolean  @default(true)
+  enabled             Boolean  @default(false)
   hideAddToCart       Boolean  @default(true)
   hideOnlyOutOfStock  Boolean  @default(true)
   customMessage       String   @default("Price on Request")

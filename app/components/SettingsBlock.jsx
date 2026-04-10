@@ -90,7 +90,7 @@ export function SettingsBlock({ settings, shopDomain }) {
   const handleSubmit = useCallback(() => {
     const formData = new FormData();
     formData.append("action", "saveSettings");
-    formData.append("enabled", formState.enabled.toString());
+    formData.append("enabled", "true");
     formData.append("hideAddToCart", formState.hideAddToCart.toString());
     formData.append("hideOnlyOutOfStock", formState.hideOnlyOutOfStock.toString());
     formData.append("customMessage", formState.customMessage);
@@ -129,32 +129,6 @@ export function SettingsBlock({ settings, shopDomain }) {
         />
       )}
 
-      {/* Main Enable/Disable Toggle */}
-      <Card>
-        <BlockStack gap="400">
-          <InlineStack align="space-between" blockAlign="center">
-            <BlockStack gap="100">
-              <Text variant="headingMd" as="h2">
-                App Status
-              </Text>
-              <Text variant="bodyMd" tone="subdued">
-                Enable or disable the price hiding functionality
-              </Text>
-            </BlockStack>
-            <Badge tone={formState.enabled ? "success" : "attention"}>
-              {formState.enabled ? "Active" : "Disabled"}
-            </Badge>
-          </InlineStack>
-          
-          <Checkbox
-            label="Enable Hide Price App"
-            checked={formState.enabled}
-            onChange={handleChange("enabled")}
-            helpText="When enabled, prices will be hidden based on your settings below"
-          />
-        </BlockStack>
-      </Card>
-
       {/* Behavior Settings */}
       <Card>
         <BlockStack gap="400">
@@ -168,7 +142,7 @@ export function SettingsBlock({ settings, shopDomain }) {
               checked={formState.hideOnlyOutOfStock}
               onChange={handleChange("hideOnlyOutOfStock")}
               helpText="When checked, prices are hidden only for products with zero inventory. When unchecked, all prices are hidden."
-              disabled={!formState.enabled}
+
             />
             
             <Checkbox
@@ -176,7 +150,7 @@ export function SettingsBlock({ settings, shopDomain }) {
               checked={formState.hideAddToCart}
               onChange={handleChange("hideAddToCart")}
               helpText="Also hide the Add to Cart button for out-of-stock products"
-              disabled={!formState.enabled}
+
             />
             
             <TextField
@@ -187,7 +161,7 @@ export function SettingsBlock({ settings, shopDomain }) {
               helpText="This message will be displayed instead of the price (max 200 characters)"
               maxLength={200}
               showCharacterCount
-              disabled={!formState.enabled}
+
               autoComplete="off"
             />
           </FormLayout>
@@ -210,7 +184,7 @@ export function SettingsBlock({ settings, shopDomain }) {
               checked={formState.hideOnProductPage}
               onChange={handleChange("hideOnProductPage")}
               helpText="Hide prices on individual product pages"
-              disabled={!formState.enabled}
+
             />
             
             <Checkbox
@@ -218,7 +192,7 @@ export function SettingsBlock({ settings, shopDomain }) {
               checked={formState.hideOnCollection}
               onChange={handleChange("hideOnCollection")}
               helpText="Hide prices on collection grid cards"
-              disabled={!formState.enabled}
+
             />
             
             <Checkbox
@@ -226,7 +200,7 @@ export function SettingsBlock({ settings, shopDomain }) {
               checked={formState.hideOnFeatured}
               onChange={handleChange("hideOnFeatured")}
               helpText="Hide prices in featured product blocks and homepage sections"
-              disabled={!formState.enabled}
+
             />
             
             <Checkbox
@@ -234,7 +208,7 @@ export function SettingsBlock({ settings, shopDomain }) {
               checked={formState.hideOnQuickView}
               onChange={handleChange("hideOnQuickView")}
               helpText="Hide prices in quick view/quick shop popups"
-              disabled={!formState.enabled}
+
             />
           </FormLayout>
         </BlockStack>
