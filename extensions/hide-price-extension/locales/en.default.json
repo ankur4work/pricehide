@@ -1,11 +1,11 @@
 {
   "app": {
-    "name": "Hide Price App",
-    "description": "Hide prices for out-of-stock products"
+    "name": "Xeo Hide Price",
+    "description": "Automatically hide product prices when out of stock"
   },
   "blocks": {
     "app_embed": {
-      "name": "Hide Price App",
+      "name": "Xeo Hide Price",
       "settings": {
         "enabled": {
           "label": "Enable price hiding"

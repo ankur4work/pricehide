@@ -39,7 +39,7 @@ export function SettingsBlock({ settings, shopDomain }) {
   
   // Success/error banner state
   const [showBanner, setShowBanner] = useState(false);
-  const [bannerContent, setBannerContent] = useState({ status: "success", message: "" });
+  const [bannerContent, setBannerContent] = useState({ tone: "success", message: "" });
 
   // Update local state when settings prop changes
   useEffect(() => {
@@ -62,7 +62,7 @@ export function SettingsBlock({ settings, shopDomain }) {
   useEffect(() => {
     if (fetcher.data?.success) {
       setBannerContent({
-        status: "success",
+        tone: "success",
         message: "Settings saved successfully!",
       });
       setShowBanner(true);
@@ -73,7 +73,7 @@ export function SettingsBlock({ settings, shopDomain }) {
       return () => clearTimeout(timer);
     } else if (fetcher.data?.error) {
       setBannerContent({
-        status: "critical",
+        tone: "critical",
         message: fetcher.data.error,
       });
       setShowBanner(true);
@@ -124,7 +124,7 @@ export function SettingsBlock({ settings, shopDomain }) {
       {showBanner && (
         <Banner
           title={bannerContent.message}
-          status={bannerContent.status}
+          tone={bannerContent.tone}
           onDismiss={() => setShowBanner(false)}
         />
       )}

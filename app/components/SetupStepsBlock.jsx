@@ -12,7 +12,6 @@ import {
   ProgressBar,
   List,
   Collapsible,
-  Link,
 } from "@shopify/polaris";
 import {
   CheckCircleIcon,

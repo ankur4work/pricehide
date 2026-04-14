@@ -8,7 +8,6 @@ import {
   Card,
   Text,
   Banner,
-  Link,
   Divider,
   Box,
   InlineStack,
@@ -307,12 +306,9 @@ export default function Index() {
                   </Text>
                   <Divider />
                   <BlockStack gap="200">
-                    <Link url="https://help.shopify.com" target="_blank">
-                      Shopify Help Center
-                    </Link>
-                    <Link url="mailto:support@example.com" target="_blank">
-                      Contact Support
-                    </Link>
+                    <Text variant="bodyMd" tone="subdued">
+                      For support, reach out via the app listing page on the Shopify App Store.
+                    </Text>
                   </BlockStack>
                 </BlockStack>
               </Card>

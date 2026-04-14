@@ -25,26 +25,22 @@ export function getExtensionsHubUrl(shop) {
 export async function checkAppEmbedStatus(session, admin, extensionHandle) {
   try {
     if (!session?.accessToken) {
-      console.log("[EmbedCheck] No access token yet, skipping");
       return { isEnabled: false };
     }
 
     const theme = await getCurrentTheme(admin);
     if (!theme) {
-      console.log("[EmbedCheck] Could not get current theme");
       return { isEnabled: false };
     }
 
     const themeId = theme.id.replace("gid://shopify/OnlineStoreTheme/", "");
-    console.log("[EmbedCheck] Checking theme", themeId, theme.name);
 
-    const url = `https://${session.shop}/admin/api/2024-01/themes/${themeId}/assets.json?asset[key]=config/settings_data.json`;
+    const url = `https://${session.shop}/admin/api/2024-04/themes/${themeId}/assets.json?asset[key]=config/settings_data.json`;
     const res = await fetch(url, {
       headers: { "X-Shopify-Access-Token": session.accessToken },
     });
 
     if (!res.ok) {
-      console.error("[EmbedCheck] REST fetch failed:", res.status);
       return { isEnabled: false };
     }
 
@@ -53,28 +49,21 @@ export async function checkAppEmbedStatus(session, admin, extensionHandle) {
     const blocks = settingsData?.current?.blocks;
 
     if (!blocks) {
-      console.log("[EmbedCheck] No blocks found in settings_data.json");
       return { isEnabled: false };
     }
 
-    console.log("[EmbedCheck] Found blocks:", Object.keys(blocks).length);
-
     for (const [key, block] of Object.entries(blocks)) {
-      console.log("[EmbedCheck] Block:", key, "type:", block.type, "disabled:", block.disabled);
       if (
         block.type &&
         block.type.includes(extensionHandle) &&
         block.disabled !== true
       ) {
-        console.log("[EmbedCheck] ✓ Found enabled embed block");
         return { isEnabled: true };
       }
     }
 
-    console.log("[EmbedCheck] Extension handle '" + extensionHandle + "' not found in any block");
     return { isEnabled: false };
   } catch (error) {
-    console.error("[EmbedCheck] Error:", error.message || error);
     return { isEnabled: false };
   }
 }
@@ -100,10 +89,9 @@ export async function getCurrentTheme(admin) {
 
     const data = await response.json();
     const mainTheme = data?.data?.themes?.nodes?.[0];
-    
+
     return mainTheme || null;
   } catch (error) {
-    console.error("Error getting current theme:", error);
     return null;
   }
 }
