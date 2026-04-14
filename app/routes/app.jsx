@@ -13,8 +13,7 @@ export const loader = async ({ request }) => {
 
   await billing.require({
     plans: [PLAN_NAME],
-    onFailure: async () =>
-      billing.request({ plan: PLAN_NAME, isTest: false }),
+    onFailure: async () => billing.request({ plan: PLAN_NAME }),
   });
 
   return { apiKey: process.env.SHOPIFY_API_KEY || "" };

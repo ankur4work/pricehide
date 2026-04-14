@@ -9,25 +9,10 @@ import {
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
 import prisma from "./db.server";
 
-// Price and plan name from environment variables — change in Vercel dashboard
+// Billing — change price from Vercel env vars, no code changes needed
 const PLAN_PRICE = parseFloat(process.env.APP_PLAN_PRICE || "20");
-const PLAN_INTERVAL = process.env.APP_PLAN_INTERVAL === "ANNUAL"
-  ? BillingInterval.Annual
-  : BillingInterval.Every30Days;
 
 export const PLAN_NAME = process.env.APP_PLAN_NAME || "Pro";
-
-export const billingConfig = {
-  [PLAN_NAME]: {
-    lineItems: [
-      {
-        amount: PLAN_PRICE,
-        currencyCode: process.env.APP_PLAN_CURRENCY || "USD",
-        interval: PLAN_INTERVAL,
-      },
-    ],
-  },
-};
 
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
@@ -42,7 +27,13 @@ const shopify = shopifyApp({
   authPathPrefix: "/auth",
   sessionStorage: new PrismaSessionStorage(prisma),
   distribution: AppDistribution.AppStore,
-  billing: billingConfig,
+  billing: {
+    [PLAN_NAME]: {
+      amount: PLAN_PRICE,
+      currencyCode: process.env.APP_PLAN_CURRENCY || "USD",
+      interval: BillingInterval.Every30Days,
+    },
+  },
   webhooks: {
     APP_UNINSTALLED: {
       deliveryMethod: DeliveryMethod.Http,
@@ -65,7 +56,6 @@ const shopify = shopifyApp({
   future: {
     v3_webhookAdminContext: true,
     v3_authenticatePublic: true,
-    v3_lineItemBilling: true,
     unstable_newEmbeddedAuthStrategy: true,
   },
   ...(process.env.SHOP_CUSTOM_DOMAIN
