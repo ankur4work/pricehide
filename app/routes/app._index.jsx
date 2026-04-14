@@ -1,6 +1,12 @@
 import { useEffect, useCallback } from "react";
 import { json } from "@remix-run/node";
-import { useLoaderData, useActionData, useNavigation } from "@remix-run/react";
+import {
+  useLoaderData,
+  useActionData,
+  useNavigation,
+  useRouteLoaderData,
+  useFetcher,
+} from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -12,6 +18,8 @@ import {
   Box,
   InlineStack,
   Badge,
+  Button,
+  List,
 } from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
@@ -21,24 +29,15 @@ import { getCurrentTheme, checkAppEmbedStatus } from "../utils/appBridge";
 import { SettingsBlock } from "../components/SettingsBlock";
 import { SetupStepsBlock } from "../components/SetupStepsBlock";
 
-// App handle used in theme block type strings (shopify://apps/{handle}/blocks/...)
 const APP_HANDLE = "xeo-hide-price";
 
-/**
- * Loader - fetches settings and shop data
- */
 export const loader = async ({ request }) => {
   try {
     const { admin, session } = await authenticate.admin(request);
     const { shop } = session;
 
-    // Get app settings
     const settings = await getSettings(shop);
-
-    // Get current theme info
     const currentTheme = await getCurrentTheme(admin);
-
-    // Check if the app embed is enabled in the live theme
     const embedResult = await checkAppEmbedStatus(session, admin, APP_HANDLE);
     const isEmbedEnabled = embedResult.isEnabled;
 
@@ -62,9 +61,6 @@ export const loader = async ({ request }) => {
   }
 };
 
-/**
- * Action - handles form submissions
- */
 export const action = async ({ request }) => {
   const { admin, session } = await authenticate.admin(request);
   const { shop } = session;
@@ -76,8 +72,7 @@ export const action = async ({ request }) => {
     switch (actionType) {
       case "saveSettings": {
         const data = parseFormData(formData);
-        
-        // Validate input
+
         const validation = validateSettings(data);
         if (!validation.isValid) {
           return json({
@@ -87,16 +82,13 @@ export const action = async ({ request }) => {
           });
         }
 
-        // Sanitize and save
         const sanitizedData = sanitizeSettings(data);
         const updatedSettings = await updateSettings(shop, sanitizedData);
 
-        // Sync to storefront metafield so Liquid can read the latest settings
         try {
           await syncSettingsToStorefront(admin, updatedSettings);
         } catch (error) {
           console.error("Failed to sync settings metafield:", error);
-          // Don't fail the save — DB is already updated
         }
 
         return json({
@@ -133,43 +125,159 @@ export const action = async ({ request }) => {
 };
 
 /**
+ * Plan Selection Page — shown when merchant has no active subscription
+ */
+function PlanSelectionPage({ planName, planPrice, planCurrency }) {
+  const fetcher = useFetcher();
+  const isSubscribing = fetcher.state === "submitting";
+
+  return (
+    <Page>
+      <TitleBar title="Xeo Hide Price" />
+      <BlockStack gap="500">
+        <Card>
+          <BlockStack gap="400">
+            <BlockStack gap="200">
+              <Text variant="headingXl" as="h1" alignment="center">
+                Choose Your Plan
+              </Text>
+              <Text variant="bodyLg" tone="subdued" alignment="center">
+                Subscribe to start hiding prices on your store
+              </Text>
+            </BlockStack>
+          </BlockStack>
+        </Card>
+
+        <Layout>
+          <Layout.Section>
+            <Card>
+              <BlockStack gap="400">
+                <InlineStack align="space-between" blockAlign="center">
+                  <BlockStack gap="100">
+                    <Text variant="headingLg" as="h2">
+                      {planName}
+                    </Text>
+                    <Text variant="bodyMd" tone="subdued">
+                      Full access to all features
+                    </Text>
+                  </BlockStack>
+                  <BlockStack gap="100">
+                    <Text variant="headingXl" as="p" alignment="end">
+                      ${planPrice}
+                    </Text>
+                    <Text variant="bodySm" tone="subdued" alignment="end">
+                      {planCurrency} / month
+                    </Text>
+                  </BlockStack>
+                </InlineStack>
+
+                <Divider />
+
+                <Text variant="headingSm" as="h3">
+                  Everything included:
+                </Text>
+                <List>
+                  <List.Item>Automatically hide prices for out-of-stock products</List.Item>
+                  <List.Item>Hide Add to Cart button</List.Item>
+                  <List.Item>Custom replacement message</List.Item>
+                  <List.Item>Works on product pages, collections, featured sections</List.Item>
+                  <List.Item>Quick view modal support</List.Item>
+                  <List.Item>Real-time inventory detection</List.Item>
+                  <List.Item>Theme-agnostic — works with any Shopify theme</List.Item>
+                </List>
+
+                <fetcher.Form method="post" action="/app">
+                  <input type="hidden" name="action" value="subscribe" />
+                  <Button
+                    variant="primary"
+                    size="large"
+                    fullWidth
+                    submit
+                    loading={isSubscribing}
+                  >
+                    Subscribe — ${planPrice}/month
+                  </Button>
+                </fetcher.Form>
+
+                <Text variant="bodySm" tone="subdued" alignment="center">
+                  You can cancel anytime from your Shopify admin
+                </Text>
+              </BlockStack>
+            </Card>
+          </Layout.Section>
+
+          <Layout.Section variant="oneThird">
+            <Card>
+              <BlockStack gap="300">
+                <Text variant="headingMd" as="h2">
+                  Why Xeo Hide Price?
+                </Text>
+                <Divider />
+                <BlockStack gap="200">
+                  <Text variant="bodyMd" tone="subdued">
+                    Stop showing prices on products you can't sell. When inventory hits zero, the app automatically replaces the price with your custom message.
+                  </Text>
+                  <Text variant="bodyMd" tone="subdued">
+                    Works instantly with any Shopify theme — no code changes needed.
+                  </Text>
+                </BlockStack>
+              </BlockStack>
+            </Card>
+          </Layout.Section>
+        </Layout>
+      </BlockStack>
+    </Page>
+  );
+}
+
+/**
  * Main Dashboard Component
  */
 export default function Index() {
   const loaderData = useLoaderData();
+  const parentData = useRouteLoaderData("routes/app");
   const actionData = useActionData();
   const navigation = useNavigation();
 
-  const { 
-    shop, 
-    settings: initialSettings, 
+  // Check billing status from parent route
+  const hasActivePayment = parentData?.hasActivePayment;
+  const planName = parentData?.planName || "Pro";
+  const planPrice = parentData?.planPrice || "20";
+  const planCurrency = parentData?.planCurrency || "USD";
+
+  // If not paid, show plan selection
+  if (!hasActivePayment) {
+    return (
+      <PlanSelectionPage
+        planName={planName}
+        planPrice={planPrice}
+        planCurrency={planCurrency}
+      />
+    );
+  }
+
+  const {
+    shop,
+    settings: initialSettings,
     currentTheme,
     isEmbedEnabled,
     extensionUuid,
     error: loaderError,
   } = loaderData;
 
-  // Use updated settings from action if available
   const settings = actionData?.settings || initialSettings;
-
-  const isLoading = navigation.state === "loading";
 
   return (
     <Page>
       <TitleBar title="Xeo Hide Price" />
-      
+
       <BlockStack gap="500">
-        {/* Error Banner */}
         {loaderError && (
-          <Banner
-            title="Error loading settings"
-            tone="critical"
-          >
+          <Banner title="Error loading settings" tone="critical">
             <p>{loaderError}</p>
           </Banner>
         )}
 
-        {/* Header Section */}
         <Card>
           <BlockStack gap="300">
             <InlineStack align="space-between" blockAlign="center">
@@ -189,10 +297,8 @@ export default function Index() {
         </Card>
 
         <Layout>
-          {/* Main Content */}
           <Layout.Section>
             <BlockStack gap="500">
-              {/* Setup Steps */}
               <SetupStepsBlock
                 shopDomain={shop}
                 extensionUuid={extensionUuid}
@@ -200,29 +306,18 @@ export default function Index() {
                 currentTheme={currentTheme}
                 settings={settings}
               />
-
-              {/* Settings */}
-              <SettingsBlock
-                settings={settings}
-                shopDomain={shop}
-              />
+              <SettingsBlock settings={settings} shopDomain={shop} />
             </BlockStack>
           </Layout.Section>
 
-          {/* Sidebar */}
           <Layout.Section variant="oneThird">
             <BlockStack gap="400">
-              {/* Quick Help */}
               <Card>
                 <BlockStack gap="300">
-                  <Text variant="headingMd" as="h2">
-                    Quick Help
-                  </Text>
+                  <Text variant="headingMd" as="h2">Quick Help</Text>
                   <Divider />
                   <BlockStack gap="200">
-                    <Text variant="bodyMd" fontWeight="semibold">
-                      How it works
-                    </Text>
+                    <Text variant="bodyMd" fontWeight="semibold">How it works</Text>
                     <Text variant="bodyMd" tone="subdued">
                       When a product's inventory reaches zero, the app automatically:
                     </Text>
@@ -237,12 +332,9 @@ export default function Index() {
                 </BlockStack>
               </Card>
 
-              {/* Supported Locations */}
               <Card>
                 <BlockStack gap="300">
-                  <Text variant="headingMd" as="h2">
-                    Supported Locations
-                  </Text>
+                  <Text variant="headingMd" as="h2">Supported Locations</Text>
                   <Divider />
                   <BlockStack gap="100">
                     <InlineStack gap="200">
@@ -257,13 +349,10 @@ export default function Index() {
                 </BlockStack>
               </Card>
 
-              {/* Current Settings Summary */}
               {settings && (
                 <Card>
                   <BlockStack gap="300">
-                    <Text variant="headingMd" as="h2">
-                      Current Configuration
-                    </Text>
+                    <Text variant="headingMd" as="h2">Current Configuration</Text>
                     <Divider />
                     <BlockStack gap="200">
                       <InlineStack align="space-between">
@@ -280,14 +369,8 @@ export default function Index() {
                       </InlineStack>
                       <Divider />
                       <BlockStack gap="100">
-                        <Text variant="bodyMd" fontWeight="semibold">
-                          Custom Message:
-                        </Text>
-                        <Box
-                          padding="200"
-                          background="bg-surface-secondary"
-                          borderRadius="100"
-                        >
+                        <Text variant="bodyMd" fontWeight="semibold">Custom Message:</Text>
+                        <Box padding="200" background="bg-surface-secondary" borderRadius="100">
                           <Text variant="bodyMd" tone="subdued">
                             "{settings.customMessage}"
                           </Text>
@@ -298,12 +381,9 @@ export default function Index() {
                 </Card>
               )}
 
-              {/* Support Links */}
               <Card>
                 <BlockStack gap="300">
-                  <Text variant="headingMd" as="h2">
-                    Need Help?
-                  </Text>
+                  <Text variant="headingMd" as="h2">Need Help?</Text>
                   <Divider />
                   <BlockStack gap="200">
                     <Text variant="bodyMd" tone="subdued">

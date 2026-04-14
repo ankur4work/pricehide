@@ -1,3 +1,4 @@
+import { json } from "@remix-run/node";
 import { Link, Outlet, useLoaderData, useRouteError } from "@remix-run/react";
 import { boundary } from "@shopify/shopify-app-remix/server";
 import { AppProvider } from "@shopify/shopify-app-remix/react";
@@ -11,12 +12,28 @@ export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 export const loader = async ({ request }) => {
   const { billing } = await authenticate.admin(request);
 
-  await billing.require({
+  const { hasActivePayment } = await billing.check({
     plans: [PLAN_NAME],
-    onFailure: async () => billing.request({ plan: PLAN_NAME }),
   });
 
-  return { apiKey: process.env.SHOPIFY_API_KEY || "" };
+  return json({
+    apiKey: process.env.SHOPIFY_API_KEY || "",
+    hasActivePayment,
+    planName: PLAN_NAME,
+    planPrice: process.env.APP_PLAN_PRICE || "20",
+    planCurrency: process.env.APP_PLAN_CURRENCY || "USD",
+  });
+};
+
+export const action = async ({ request }) => {
+  const { billing } = await authenticate.admin(request);
+  const formData = await request.formData();
+
+  if (formData.get("action") === "subscribe") {
+    await billing.request({ plan: PLAN_NAME, isTest: false });
+  }
+
+  return null;
 };
 
 export default function App() {
@@ -34,7 +51,6 @@ export default function App() {
   );
 }
 
-// Shopify needs error boundary for embedded app
 export function ErrorBoundary() {
   return (
     <PolarisProvider i18n={{}}>
