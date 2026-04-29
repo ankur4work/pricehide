@@ -127,7 +127,7 @@ export const action = async ({ request }) => {
 /**
  * Plan Selection Page — shown when merchant has no active subscription
  */
-function PlanSelectionPage({ planName, planPrice, planCurrency }) {
+function PlanSelectionPage({ planName, planPrice, planCurrency, trialDays }) {
   const fetcher = useFetcher();
   const isSubscribing = fetcher.state === "submitting";
 
@@ -144,6 +144,11 @@ function PlanSelectionPage({ planName, planPrice, planCurrency }) {
               <Text variant="bodyLg" tone="subdued" alignment="center">
                 Subscribe to start hiding prices on your store
               </Text>
+              {trialDays > 0 && (
+                <Text variant="bodyLg" tone="success" alignment="center" fontWeight="semibold">
+                  {trialDays}-day free trial — no charge until trial ends
+                </Text>
+              )}
             </BlockStack>
           </BlockStack>
         </Card>
@@ -195,12 +200,16 @@ function PlanSelectionPage({ planName, planPrice, planCurrency }) {
                     submit
                     loading={isSubscribing}
                   >
-                    Subscribe — ${planPrice}/month
+                    {trialDays > 0
+                      ? `Start ${trialDays}-day free trial — then $${planPrice}/month`
+                      : `Subscribe — $${planPrice}/month`}
                   </Button>
                 </fetcher.Form>
 
                 <Text variant="bodySm" tone="subdued" alignment="center">
-                  You can cancel anytime from your Shopify admin
+                  {trialDays > 0
+                    ? `${trialDays}-day free trial, then $${planPrice}/${planCurrency} per month. Cancel anytime.`
+                    : "You can cancel anytime from your Shopify admin"}
                 </Text>
               </BlockStack>
             </Card>
@@ -244,6 +253,7 @@ export default function Index() {
   const planName = parentData?.planName || "Pro";
   const planPrice = parentData?.planPrice || "20";
   const planCurrency = parentData?.planCurrency || "USD";
+  const trialDays = parentData?.trialDays ?? 3;
 
   // If not paid, show plan selection
   if (!hasActivePayment) {
@@ -252,6 +262,7 @@ export default function Index() {
         planName={planName}
         planPrice={planPrice}
         planCurrency={planCurrency}
+        trialDays={trialDays}
       />
     );
   }

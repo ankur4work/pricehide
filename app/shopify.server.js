@@ -9,8 +9,9 @@ import {
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
 import prisma from "./db.server";
 
-// Billing — change price from Vercel env vars, no code changes needed
+// Billing — change these from env vars, no code changes needed
 const PLAN_PRICE = parseFloat(process.env.APP_PLAN_PRICE || "20");
+export const TRIAL_DAYS = parseInt(process.env.APP_TRIAL_DAYS || "3", 10);
 
 export const PLAN_NAME = process.env.APP_PLAN_NAME || "Pro";
 
@@ -32,6 +33,7 @@ const shopify = shopifyApp({
       amount: PLAN_PRICE,
       currencyCode: process.env.APP_PLAN_CURRENCY || "USD",
       interval: BillingInterval.Every30Days,
+      trialDays: TRIAL_DAYS,
     },
   },
   webhooks: {

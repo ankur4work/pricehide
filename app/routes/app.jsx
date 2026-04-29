@@ -5,7 +5,7 @@ import { AppProvider } from "@shopify/shopify-app-remix/react";
 import { AppProvider as PolarisProvider } from "@shopify/polaris";
 import { NavMenu } from "@shopify/app-bridge-react";
 import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
-import { authenticate, PLAN_NAME } from "../shopify.server";
+import { authenticate, PLAN_NAME, TRIAL_DAYS } from "../shopify.server";
 
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
@@ -22,6 +22,7 @@ export const loader = async ({ request }) => {
     planName: PLAN_NAME,
     planPrice: process.env.APP_PLAN_PRICE || "20",
     planCurrency: process.env.APP_PLAN_CURRENCY || "USD",
+    trialDays: TRIAL_DAYS,
   });
 };
 
