@@ -42,8 +42,16 @@ const shopify = shopifyApp({
   billing: {
     [PLAN_NAME]: {
       amount: PLAN_PRICE,
-      currencyCode: process.env.APP_PLAN_CURRENCY || "USD",
+      currencyCode: PLAN_CURRENCY,
       interval: BillingInterval.Every30Days,
+      trialDays: TRIAL_DAYS,
+    },
+    // Must be registered here too — billing.request/check only accept plans
+    // that exist in this config, so a missing entry throws at subscribe time.
+    [ANNUAL_PLAN_NAME]: {
+      amount: ANNUAL_PLAN_PRICE,
+      currencyCode: PLAN_CURRENCY,
+      interval: BillingInterval.Annual,
       trialDays: TRIAL_DAYS,
     },
   },
