@@ -10,10 +10,21 @@ import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prism
 import prisma from "./db.server";
 
 // Billing — change these from env vars, no code changes needed
-const PLAN_PRICE = parseFloat(process.env.APP_PLAN_PRICE || "20");
-export const TRIAL_DAYS = parseInt(process.env.APP_TRIAL_DAYS || "3", 10);
+const PLAN_PRICE = parseFloat(process.env.APP_PLAN_PRICE || "30");
+export const TRIAL_DAYS = parseInt(process.env.APP_TRIAL_DAYS || "0", 10);
 
 export const PLAN_NAME = process.env.APP_PLAN_NAME || "Pro";
+
+// Annual plan. Billed once a year at a discount vs. 12 x the monthly price.
+// Keep PLAN_NAME itself unchanged: billing.check matches on the plan name, so
+// renaming it would stop matching existing subscribers and lock them out.
+export const ANNUAL_PLAN_NAME =
+  process.env.APP_PLAN_ANNUAL_NAME || `${PLAN_NAME} Annual`;
+const ANNUAL_PLAN_PRICE = parseFloat(process.env.APP_PLAN_ANNUAL_PRICE || "300");
+
+export const PLAN_CURRENCY = process.env.APP_PLAN_CURRENCY || "USD";
+export const PLAN_PRICES = { monthly: PLAN_PRICE, annual: ANNUAL_PLAN_PRICE };
+export const ALL_PLAN_NAMES = [PLAN_NAME, ANNUAL_PLAN_NAME];
 
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,

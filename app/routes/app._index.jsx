@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
 import { json } from "@remix-run/node";
 import {
   useLoaderData,
@@ -127,9 +127,28 @@ export const action = async ({ request }) => {
 /**
  * Plan Selection Page — shown when merchant has no active subscription
  */
-function PlanSelectionPage({ planName, planPrice, planCurrency, trialDays }) {
+function PlanSelectionPage({
+  planName,
+  planPrice,
+  annualPlanName,
+  annualPlanPrice,
+  planCurrency,
+  trialDays,
+}) {
   const fetcher = useFetcher();
   const isSubscribing = fetcher.state === "submitting";
+  const [interval, setInterval] = useState("monthly");
+
+  const isAnnual = interval === "annual";
+  const price = isAnnual ? annualPlanPrice : planPrice;
+  const period = isAnnual ? "year" : "month";
+  const selectedPlanName = isAnnual ? annualPlanName : planName;
+
+  // What a year on the annual plan saves vs. paying monthly.
+  const annualSavings =
+    Number.isFinite(Number(planPrice)) && Number.isFinite(Number(annualPlanPrice))
+      ? Number(planPrice) * 12 - Number(annualPlanPrice)
+      : 0;
 
   return (
     <Page>
@@ -149,6 +168,23 @@ function PlanSelectionPage({ planName, planPrice, planCurrency, trialDays }) {
                   {trialDays}-day free trial — no charge until trial ends
                 </Text>
               )}
+              <InlineStack align="center" gap="200" blockAlign="center">
+                <Button
+                  pressed={!isAnnual}
+                  onClick={() => setInterval("monthly")}
+                >
+                  Monthly
+                </Button>
+                <Button
+                  pressed={isAnnual}
+                  onClick={() => setInterval("annual")}
+                >
+                  Yearly
+                </Button>
+                {annualSavings > 0 && (
+                  <Badge tone="success">{`Save $${annualSavings} a year`}</Badge>
+                )}
+              </InlineStack>
             </BlockStack>
           </BlockStack>
         </Card>
@@ -160,7 +196,7 @@ function PlanSelectionPage({ planName, planPrice, planCurrency, trialDays }) {
                 <InlineStack align="space-between" blockAlign="center">
                   <BlockStack gap="100">
                     <Text variant="headingLg" as="h2">
-                      {planName}
+                      {selectedPlanName}
                     </Text>
                     <Text variant="bodyMd" tone="subdued">
                       Full access to all features
@@ -168,10 +204,10 @@ function PlanSelectionPage({ planName, planPrice, planCurrency, trialDays }) {
                   </BlockStack>
                   <BlockStack gap="100">
                     <Text variant="headingXl" as="p" alignment="end">
-                      ${planPrice}
+                      ${price}
                     </Text>
                     <Text variant="bodySm" tone="subdued" alignment="end">
-                      {planCurrency} / month
+                      {planCurrency} / {period}
                     </Text>
                   </BlockStack>
                 </InlineStack>
@@ -193,6 +229,7 @@ function PlanSelectionPage({ planName, planPrice, planCurrency, trialDays }) {
 
                 <fetcher.Form method="post" action="/app">
                   <input type="hidden" name="action" value="subscribe" />
+                  <input type="hidden" name="interval" value={interval} />
                   <Button
                     variant="primary"
                     size="large"
@@ -201,15 +238,15 @@ function PlanSelectionPage({ planName, planPrice, planCurrency, trialDays }) {
                     loading={isSubscribing}
                   >
                     {trialDays > 0
-                      ? `Start ${trialDays}-day free trial — then $${planPrice}/month`
-                      : `Subscribe — $${planPrice}/month`}
+                      ? `Start ${trialDays}-day free trial — then $${price}/${period}`
+                      : `Subscribe — $${price}/${period}`}
                   </Button>
                 </fetcher.Form>
 
                 <Text variant="bodySm" tone="subdued" alignment="center">
                   {trialDays > 0
-                    ? `${trialDays}-day free trial, then $${planPrice}/${planCurrency} per month. Cancel anytime.`
-                    : "You can cancel anytime from your Shopify admin"}
+                    ? `${trialDays}-day free trial, then $${price}/${planCurrency} per ${period}. Cancel anytime.`
+                    : `Billed $${price} ${planCurrency} per ${period}. You can cancel anytime from your Shopify admin.`}
                 </Text>
               </BlockStack>
             </Card>
@@ -251,9 +288,11 @@ export default function Index() {
   // Check billing status from parent route
   const hasActivePayment = parentData?.hasActivePayment;
   const planName = parentData?.planName || "Pro";
-  const planPrice = parentData?.planPrice || "20";
+  const planPrice = parentData?.planPrice || "30";
+  const annualPlanName = parentData?.annualPlanName || `${planName} Annual`;
+  const annualPlanPrice = parentData?.annualPlanPrice || "300";
   const planCurrency = parentData?.planCurrency || "USD";
-  const trialDays = parentData?.trialDays ?? 3;
+  const trialDays = parentData?.trialDays ?? 0;
 
   // If not paid, show plan selection
   if (!hasActivePayment) {
@@ -261,6 +300,8 @@ export default function Index() {
       <PlanSelectionPage
         planName={planName}
         planPrice={planPrice}
+        annualPlanName={annualPlanName}
+        annualPlanPrice={annualPlanPrice}
         planCurrency={planCurrency}
         trialDays={trialDays}
       />

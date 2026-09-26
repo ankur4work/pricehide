@@ -5,23 +5,34 @@ import { AppProvider } from "@shopify/shopify-app-remix/react";
 import { AppProvider as PolarisProvider } from "@shopify/polaris";
 import { NavMenu } from "@shopify/app-bridge-react";
 import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
-import { authenticate, PLAN_NAME, TRIAL_DAYS } from "../shopify.server";
+import {
+  authenticate,
+  PLAN_NAME,
+  ANNUAL_PLAN_NAME,
+  ALL_PLAN_NAMES,
+  PLAN_PRICES,
+  PLAN_CURRENCY,
+  TRIAL_DAYS,
+} from "../shopify.server";
 
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
 export const loader = async ({ request }) => {
   const { billing } = await authenticate.admin(request);
 
+  // Either plan grants access, so check both.
   const { hasActivePayment } = await billing.check({
-    plans: [PLAN_NAME],
+    plans: ALL_PLAN_NAMES,
   });
 
   return json({
     apiKey: process.env.SHOPIFY_API_KEY || "",
     hasActivePayment,
     planName: PLAN_NAME,
-    planPrice: process.env.APP_PLAN_PRICE || "20",
-    planCurrency: process.env.APP_PLAN_CURRENCY || "USD",
+    planPrice: String(PLAN_PRICES.monthly),
+    annualPlanName: ANNUAL_PLAN_NAME,
+    annualPlanPrice: String(PLAN_PRICES.annual),
+    planCurrency: PLAN_CURRENCY,
     trialDays: TRIAL_DAYS,
   });
 };
@@ -31,7 +42,10 @@ export const action = async ({ request }) => {
   const formData = await request.formData();
 
   if (formData.get("action") === "subscribe") {
-    await billing.request({ plan: PLAN_NAME, isTest: false });
+    // "annual" picks the yearly plan; anything else falls back to monthly.
+    const plan =
+      formData.get("interval") === "annual" ? ANNUAL_PLAN_NAME : PLAN_NAME;
+    await billing.request({ plan, isTest: false });
   }
 
   return null;
