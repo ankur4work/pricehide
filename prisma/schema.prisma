@@ -3,6 +3,10 @@
 
 generator client {
   provider = "prisma-client-js"
+  // Vercel's Node 24 runtime uses a newer base image (OpenSSL 3) than Node 20's.
+  // Without an explicit target Prisma generates an engine for the build machine
+  // only, and the function crashes on boot when the runtime does not match.
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
